@@ -6,10 +6,9 @@ import { CronJob } from "cron";
 // import { getAllUsers, getExpensesForUser } from './db';
 // import fs from 'fs';
 
-const job = new CronJob("*/14 * * * *", async () => {
+const job = new CronJob("*/10 * * * *", async () => {
   try {
     const res = await fetch(`${process.env.API_URL}/api/health`);
-    console.log(res)
     if (res.ok) console.log("Cron Job successfully pinged the API");
     else console.log("GET request failed", res.status);
   } catch (err) {

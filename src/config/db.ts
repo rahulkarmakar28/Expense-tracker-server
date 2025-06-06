@@ -8,5 +8,3 @@ export const DB_Connect = () => {
     const sql = neon(process.env.DATABASE_URL!);
     return drizzle({ client: sql });
 };
-
-//make i async

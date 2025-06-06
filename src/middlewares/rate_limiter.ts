@@ -8,7 +8,7 @@ export const rateLimiter: MiddlewareHandler = async (c, next) => {
         c.req.raw.headers.get('true-client-ip') ||
         c.req.raw.headers.get('cf-connecting-ip') ||
         getConnInfo(c).remote.address as string
-        console.log('Client IP:', userIp);
+        // console.log('Client IP:', userIp);
         
         const { success } = await ratelimiter.limit(userIp)
         if (!success) {
