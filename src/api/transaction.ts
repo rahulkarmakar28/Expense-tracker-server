@@ -33,6 +33,7 @@ app.post('/',
     async (c) => {
         try {
             const { userId, title, amount, category, isExpense } = c.req.valid('json')
+            console.log({ userId, title, amount, category, isExpense })
             const result = await db.insert(transactionTable).values({
                 userId,
                 title,
@@ -40,6 +41,7 @@ app.post('/',
                 category,
                 type: isExpense ? "Expense" : "Income"
             })
+            console.log(result)
             return c.json({ "success": true, "message": "Transaction created successfully" }, 201)
         } catch (error) {
             console.error('Error inserting transaction:', error)
@@ -82,7 +84,7 @@ app.delete('/:id',
 app.get('/summary/:userId',
     zValidator('param', getTransactionSummarySchema),
     async (c) => {
-        console.log("get transactionm summary")
+        // console.log("get transactionm summary")
         const { userId } = c.req.valid('param')
         try {
             const summary = await db
