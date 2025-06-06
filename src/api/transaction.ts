@@ -9,10 +9,11 @@ const app = new Hono();
 
 
 const createTransactionSchema = z.object({
-    userId: z.number().int(),
+    userId: z.string(),
     title: z.string(),
-    amount: z.number().int(),
+    amount: z.number(),
     category: z.string(),
+    isExpense: z.boolean()
 })
 const getTransactionsSchema = z.object({
     userId: z.string()
@@ -31,14 +32,15 @@ app.post('/',
     zValidator('json', createTransactionSchema),
     async (c) => {
         try {
-            const { userId, title, amount, category } = c.req.valid('json')
+            const { userId, title, amount, category, isExpense } = c.req.valid('json')
             const result = await db.insert(transactionTable).values({
                 userId,
                 title,
                 amount,
                 category,
+                type: isExpense ? "Expense" : "Income"
             })
-            return c.json({ "success": true, "data": result }, 201)
+            return c.json({ "success": true, "message": "Transaction created successfully" }, 201)
         } catch (error) {
             console.error('Error inserting transaction:', error)
             return c.json({ error: 'Failed to create transaction' }, 500)
@@ -49,8 +51,9 @@ app.get('/:userId',
     zValidator('param', getTransactionsSchema),
     async (c) => {
         const { userId } = c.req.valid('param')
+        console.log("get transaction")
         try {
-            const transactions = await db.select().from(transactionTable).where(eq(transactionTable.userId, Number(userId)))
+            const transactions = await db.select().from(transactionTable).where(eq(transactionTable.userId, userId))
             return c.json({ "success": true, "data": transactions }, 200)
         } catch (error) {
             console.error('Error fetching transactions:', error)
@@ -65,7 +68,7 @@ app.delete('/:id',
         const id = c.req.param('id')
         try {
             const result = await db.delete(transactionTable).where(eq(transactionTable.id, Number(id)))
-            console.log('Delete result:', result)
+            // console.log('Delete result:', result)
             if (result.rowCount === 0) {
                 return c.json({ error: 'Transaction not found' }, 404)
             }
@@ -76,35 +79,27 @@ app.delete('/:id',
         }
     }
 )
-app.get('/summary/:userId', 
+app.get('/summary/:userId',
     zValidator('param', getTransactionSummarySchema),
-    async(c)=>{
+    async (c) => {
+        console.log("get transactionm summary")
         const { userId } = c.req.valid('param')
         try {
             const summary = await db
                 .select({
-                    category: transactionTable.category,
+                    category: transactionTable.type,
                     totalAmount: sum(transactionTable.amount)
                 })
                 .from(transactionTable)
-                .where(eq(transactionTable.userId, Number(userId)))
-                .groupBy(transactionTable.category)
-            console.log('Transaction summary:', summary)
-            if (summary.length === 0) {
-                return c.json({ error: 'No transactions found for this user' }, 404)
+                .where(eq(transactionTable.userId, userId))
+                .groupBy(transactionTable.type)
+            if (summary.length === 0) return c.json({ sucees:true, message: 'No transactions found for this user' })
+            const res={
+                "Income":summary[0].totalAmount, 
+                "Expense":summary[1].totalAmount,
+                "total":Number.parseFloat(summary[0].totalAmount!)-Number.parseFloat(summary[1].totalAmount!)
             }
-            // Return the summary of transactions grouped by category
-            // total amount , income , expenses
-            // const formattedSummary = {
-            //     totalIncome: summary.filter(item => item.category === 'income').reduce((acc, curr) => acc + (curr?.totalAmount || 0), 0),
-            //     totalExpenses: summary.filter(item => item.category === 'expense').reduce((acc, curr) => acc + (curr.totalAmount || 0), 0),
-            //     categories: summary.map(item => ({
-            //         category: item.category,
-            //         totalAmount: item.totalAmount || 0
-            //     }))
-            // }
-
-            return c.json({ "success": true, "data": summary }, 200)
+            return c.json({ "success": true, "data": res }, 200)
         } catch (error) {
             console.error('Error fetching transaction summary:', error)
             return c.json({ error: 'Failed to fetch transaction summary' }, 500)

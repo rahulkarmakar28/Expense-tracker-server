@@ -4,11 +4,11 @@ import transactionRoute from './api/transaction'
 import authRoute from "./api/auth"
 import rateLimiter from './middlewares/rate_limiter'
 import {job} from './config/cron'
-
+import { cors } from 'hono/cors'
 
 
 const app = new Hono()
-
+app.use('*', cors())
 export const db = DB_Connect()
 if (process.env.NODE_ENV === 'production') job.start()
 app.use(rateLimiter)
