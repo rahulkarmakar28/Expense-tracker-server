@@ -93,12 +93,16 @@ app.get('/summary/:userId',
                 .from(transactionTable)
                 .where(eq(transactionTable.userId, userId))
                 .groupBy(transactionTable.type)
-            if (summary.length === 0) return c.json({ sucees:true, message: 'No transactions found for this user' })
-            const res={
-                "Income":summary[0].totalAmount, 
-                "Expense":summary[1].totalAmount,
-                "total":Number.parseFloat(summary[0].totalAmount!)-Number.parseFloat(summary[1].totalAmount!)
-            }
+            if (summary.length === 0) return c.json({ sucees: true, message: 'No transactions found for this user' })
+            const income = summary.find(item => item.category === 'Income');
+            const expense = summary.find(item => item.category === 'Expense');
+
+            const res = {
+                Income: income?.totalAmount || "0",
+                Expense: expense?.totalAmount || "0",
+                total: parseFloat(income?.totalAmount || "0") - parseFloat(expense?.totalAmount || "0"),
+            };
+
             return c.json({ "success": true, "data": res }, 200)
         } catch (error) {
             console.error('Error fetching transaction summary:', error)
